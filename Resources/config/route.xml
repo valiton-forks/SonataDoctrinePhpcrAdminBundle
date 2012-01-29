@@ -6,6 +6,12 @@
 
     <services>
         <service id="sonata.admin.route.path_info_slashes" class="Sonata\DoctrinePHPCRAdminBundle\Route\PathInfoBuilderSlashes" />
+
+        <service id="sonata.admin.route.path_generator" class="Sonata\DoctrinePHPCRAdminBundle\Route\PathRouteGenerator">
+            <argument type="service" id="router" />
+            <argument type="service" id="service_container" />
+        </service>
+
     </services>
 </container>
 

@@ -15,6 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 use Sonata\DoctrinePHPCRAdminBundle\DependencyInjection\Compiler\AddGuesserCompilerPass;
 use Sonata\DoctrinePHPCRAdminBundle\DependencyInjection\Compiler\AddTemplatesCompilerPass;
+use Sonata\DoctrinePHPCRAdminBundle\DependencyInjection\Compiler\AddDependencyCallsCompilerPass;
 
 class SonataDoctrinePHPCRAdminBundle extends Bundle
 {
@@ -22,5 +23,6 @@ class SonataDoctrinePHPCRAdminBundle extends Bundle
     {
         $container->addCompilerPass(new AddGuesserCompilerPass());
         $container->addCompilerPass(new AddTemplatesCompilerPass());
+        $container->addCompilerPass(new AddDependencyCallsCompilerPass());
     }
 }
