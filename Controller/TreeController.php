@@ -41,6 +41,10 @@ class TreeController extends Controller
 
         $route = $admin->getRoute($action);
 
+        if (!$route) {
+            throw new NotFoundHttpException(sprintf('The action `%s` does not exist', $action));
+        }
+
         // Alter the request
         $request = $this->container->get('request');
         $request->attributes->set('_controller', $route->getDefault('_controller'));
