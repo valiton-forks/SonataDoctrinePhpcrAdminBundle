@@ -11,67 +11,90 @@ file that was distributed with this source code.
 
 {% extends base_template %}
 
-{% block title %}{% trans from 'SonataAdminBundle' %}title_tree{% endtrans %}{% endblock%}
-{% block breadcrumb %}{% endblock %}
-{% block stylesheets %}
-    {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('bundles/symfonycmftree/css/jquery.treeview.css') }}" type="text/css" media="all" />
-{% endblock %}
+{% block title %}
+    {% for parent in parents %}
+        / <a href="/app_dev.php/admin/tree{{ parent.path }}">{{ parent.name }}</a>
+    {% endfor %}
+{% endblock%}
 
-{% block javascripts %}
-    {{ parent() }}
-    {% include 'SymfonyCmfPHPCRBrowserBundle:Base:tree.html.twig' %}
-            <script type="text/javascript">
-                $(document).ready(function() {
-                    initTree({
-                        "selector": "#tree",
-                        "path": {
-                            "expanded":     [ "/cms" ],
-                            "preloaded":    [ "/cms" ],
-                        },
-                        "icon": {
-                            "document": "{{ asset('bundles/symfonycmftree/images/document.png') }}",
-                            "folder":   "{{ asset('bundles/symfonycmftree/images/folder.png') }}"
-                        },
-                        "route": {
-                            "edit":     'admin_sandbox_main_editablestaticcontent_edit',
-                            "erase":    'admin_sandbox_main_editablestaticcontent_delete'
-                        },
-                        "routecollection": {
-                            {% for handler in handlers %}
-                                "{{handler.className}}" :{
-                                    "label" : "{{ handler.label }}",
-                                    "routes" : {
-                                        {% for code, path in handler.routes %}
-                                            "{{ code }}" : "{{ path }}",
-                                        {% endfor%}
-                                    }
-                                },
-                            {% endfor%}
-                        },
-                        "doctypes": {
-                            {% for handler in handlers %}
-                                "{{ handler.label }}": {
-                                    "label": "{{handler.label}}",
-                                    "action": function (node) {
-                                        window.location = Routing.generate(
-                                            '{{handler.routes.create}}',
-                                            { "id": node.attr("id") }
-                                        );
-                                    }
-                                },
-                            {% endfor %}
-                        }
-                    });
-                });
-            </script>
-{% endblock %}
+{% block breadcrumb %}{% endblock %}
 
 {% block side_menu %}
-    <div id="tree"></div>
-    {{ parent() }}
+    <ul>
+        {% for child in node.nodes('*') %}
+            <li><a href="/app_dev.php/admin/tree{{ child.path }}">{{ child.name }}</a></li>
+        {% endfor %}
+    </ul>
 {% endblock %}
+
 {% block content %}
+    <h2>Properties</h2>
+    <div>
+        <ul>
+            {% for property in node.properties %}
+                <li> name : {{ property.name }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <h2>Children Nodes</h2>
+    <div>
+        <table class="zebra-striped bordered-table">
+            <thead>
+                <tr>
+                    <td>Name</td>
+                    <td>phpcr:class</td>
+                    <td>jcr:uuid</td>
+                </tr>
+            </thead>
+            <tbody>
+                {% for child in node.nodes('*') %}
+                    <tr>
+                        <td><a href="/app_dev.php/admin/tree{{ child.path }}">{{ child.name }}</a></td>
+                        <td>
+                            {% if not child.hasProperty('phpcr:class') %}
+                                no phpcr:class property
+                            {% elseif admin_pool.hasAdminByClass(child.property('phpcr:class').value) %}
+                                <a href="{{ admin_pool.getAdminByClass(child.property('phpcr:class').value).generateUrl('edit', {'id': child.path  }) }}">edit</a>
+                            {% else %}
+                                {{ child.property('phpcr:class').value }}
+                            {% endif %}
+                        </td>
+                        <td>{{ child.identifier }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Add Node</h2>
+    <div>
+        {% for group in admin_pool.getDashboardGroups %}
+            <table class="zebra-striped sonata-ba-list bordered-table">
+                <thead>
+                    <tr>
+                        <th colspan="3">{{ group.label|trans({}, 'SonataAdminBundle') }}</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for admin in group.items %}
+                        <tr>
+                            <td class="sonata-ba-list-label">{{ admin.label|trans({}, admin.translationdomain) }}</td>
+                            <td>
+                                {% if admin.hasroute('create') and admin.isGranted('CREATE') %}
+                                    <a href="{{ admin.generateUrl('create')}}">
+                                        <img src="{{ asset('bundles/sonataadmin/famfamfam/add.png') }}"  alt="{%- trans from 'SonataAdminBundle' %}link_add{% endtrans -%}" />
+                                        {%- trans from 'SonataAdminBundle' %}link_add{% endtrans -%}
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endfor %}
+    </div>
 
 {% endblock %}
 

@@ -10,36 +10,99 @@ class TreeController extends Controller
 {
 
     /**
-     * Renders a tree, passing the routes for each of the admin types (document types)
-     * to the view
+     * This must be done in a the listener ...
      *
      * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function indexAction() {
-        //Obtain the routes for each document
-        $pool = $this->get('sonata.admin.pool');
-        $classes = $pool->getAdminClasses();
-        $adminClasses = array();
-        foreach ($classes as $class) {
-            $instance = $this->get($class);
-            $routeCollection = array();
-            foreach ($instance->getRoutes()->getElements() as $code => $route) {
-                $action = explode('.', $code);
-                //the key is "create", "delete"... and the value is the name
-                //of the route
-                $routeCollection[end($action)] = sprintf('%s_%s', $instance->getBaseRouteName(), end($action));
-            }
-            array_push($adminClasses, array(
-                'label' => $instance->getLabel(),
-                'className' => $instance->getClass(),
-                'baseRoute' => $instance->getBaseRoutePattern(),
-                'routes' => $routeCollection));
+    public function dispatcherAction($id)
+    {
+        $path = $id ?: '/';
+
+        $node = $this->getPHPCRSession()->getNode($path);
+
+        $action = $this->getRequest()->get('action', 'list');
+
+        if ($action == 'list') {
+            return $this->executeList($node);
         }
 
+        if ($adminId = $this->getRequest()->get('admin')) {
+            $admin = $this->getAdminPool()->getAdminByAdminCode($adminId);
+        } else {
+            $class = $node->getProperty('phpcr:class')->getValue();
+
+            // retrieve the related Admin Instance
+            if (!$this->getAdminPool()->hasAdminByClass($class)) {
+                throw new NotFoundHttpException(sprintf('There is no admin linked to the class %s', $class));
+            }
+
+            $admin = $this->getAdminPool()->getAdminByClass($class);
+        }
+
+        $route = $admin->getRoute($action);
+
+        // Alter the request
+        $request = $this->container->get('request');
+        $request->attributes->set('_controller', $route->getDefault('_controller'));
+        $request->attributes->set('_sonata_admin', $admin->getCode());
+
+        // execute the controller
+        $controller = $this->container->get('controller_resolver')->getController($request);
+        $arguments = $this->container->get('controller_resolver')->getArguments($request, $controller);
+
+        // call controller
+        $response = call_user_func_array($controller, $arguments);
+
+        return $response;
+    }
+
+    public function executeList($node)
+    {
         return $this->render('SonataDoctrinePHPCRAdminBundle:Tree:index.html.twig', array(
-            'base_template'   => 'SonataAdminBundle::standard_layout.html.twig',
-            'admin_pool'      => $this->container->get('sonata.admin.pool'),
-            'handlers'          => $adminClasses
+            'node'   => $node,
         ));
+    }
+
+    /**
+     * @param $view
+     * @param array $parameters
+     * @param \Symfony\Component\HttpFoundation\Response $response
+     * @return \Symfony\Bundle\FrameworkBundle\Controller\Response
+     */
+    public function render($view, array $parameters = array(), Response $response = null)
+    {
+        $parents = array();
+
+        if (isset($parameters['node'])) {
+            $parent = $parameters['node'];
+            while($parent->getDepth() > 0) {
+                $parents[] = $parent;
+                $parent = $parent->getParent();
+            }
+
+            $parents = array_reverse($parents);
+        }
+
+        $parameters['base_template'] = $this->getAdminPool()->getTemplate('layout');
+        $parameters['admin_pool']    = $this->getAdminPool();
+        $parameters['parents']       = $parents;
+
+        return parent::render($view, $parameters, $response);
+    }
+
+    /**
+     * @return \Jackalope\Session
+     */
+    public function getPHPCRSession()
+    {
+        return $this->container->get('doctrine_phpcr.default_session');
+    }
+
+    /**
+     * @return \Sonata\AdminBundle\Admin\Pool
+     */
+    public function getAdminPool()
+    {
+        return $this->container->get('sonata.admin.pool');
     }
 }

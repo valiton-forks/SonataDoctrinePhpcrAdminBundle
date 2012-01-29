@@ -18,6 +18,7 @@ use Sonata\AdminBundle\Datagrid\DatagridInterface;
 use Sonata\AdminBundle\Datagrid\ProxyQueryInterface;
 use Doctrine\ODM\PHPCR\DocumentManager;
 use Sonata\AdminBundle\Exception\ModelManagerException;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 use Symfony\Component\Form\Exception\PropertyAccessDeniedException;
 
@@ -25,13 +26,16 @@ class ModelManager implements ModelManagerInterface
 {
     protected $documentManager;
 
+    protected $container;
+
     /**
      *
      * @param \Doctrine\ODM\PHPCR\DocumentManager $documentManager
      */
-    public function __construct(DocumentManager $documentManager)
+    public function __construct(DocumentManager $documentManager, ContainerInterface $container)
     {
         $this->documentManager = $documentManager;
+        $this->container = $container;
     }
 
     /**
@@ -91,11 +95,22 @@ class ModelManager implements ModelManagerInterface
 
     public function create($object)
     {
+
+        // no path defined
+        if (!$object->getId() && $this->container->has('request')) {
+            $path = sprintf('%s/%s',
+                $this->container->get('request')->get('id'),
+                self::slugify((string)$object)
+            );
+
+            $object->setId($path);
+        }
+
         try {
             $this->documentManager->persist($object);
             $this->documentManager->flush();
         } catch ( \Exception $e ) {
-            throw new ModelManagerException('', 0, $e);
+            throw new ModelManagerException($e->getMessage(), 0, $e);
         }
     }
 
@@ -105,7 +120,7 @@ class ModelManager implements ModelManagerInterface
             $this->documentManager->persist($object);
             $this->documentManager->flush();
         } catch ( \Exception $e ) {
-            throw new ModelManagerException('', 0, $e);
+            throw new ModelManagerException($e->getMessage(), 0, $e);
         }
     }
 
@@ -115,7 +130,7 @@ class ModelManager implements ModelManagerInterface
             $this->documentManager->remove($object);
             $this->documentManager->flush();
         } catch ( \Exception $e ) {
-            throw new ModelManagerException('', 0, $e);
+            throw new ModelManagerException($e->getMessage(), 0, $e);
         }
     }
 
@@ -470,5 +485,38 @@ class ModelManager implements ModelManagerInterface
     public function collectionRemoveElement(&$collection, &$element)
     {
         return $collection->removeElement($element);
+    }
+
+    /**
+     * source : http://snipplr.com/view/22741/slugify-a-string-in-php/
+     *
+     * @static
+     * @param  $text
+     * @return mixed|string
+     */
+    static public function slugify($text)
+    {
+        // replace non letter or digits by -
+        $text = preg_replace('~[^\\pL\d]+~u', '-', $text);
+
+        // trim
+        $text = trim($text, '-');
+
+        // transliterate
+        if (function_exists('iconv')) {
+            $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+        }
+
+        // lowercase
+        $text = strtolower($text);
+
+        // remove unwanted characters
+        $text = preg_replace('~[^-\w]+~', '', $text);
+
+        if (empty($text)) {
+            return 'n-a';
+        }
+
+        return $text;
     }
 }
