@@ -5,7 +5,7 @@
     xsi:schemaLocation="http://symfony.com/schema/routing http://symfony.com/schema/routing/routing-1.0.xsd">
 
     <route id="sonata_admin_tree" pattern="/tree{id}">
-        <default key="_controller">SonataDoctrinePHPCRAdminBundle:Tree:dispatcher</default>
+        <default key="_controller">SonataDoctrinePHPCRAdminBundle:Tree:list</default>
         <default key="id"></default>
         <requirement key="id">.*</requirement>
     </route>

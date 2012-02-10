@@ -60,5 +60,16 @@
         <service id="sonata.admin.guesser.doctrine_phpcr_datagrid_chain" class="Sonata\AdminBundle\Guesser\TypeGuesserChain">
             <argument />
         </service>
+
+        <!-- Request Listener dispatcher-->
+        <service id="sonata.admin.listener.request" class="Sonata\DoctrinePHPCRAdminBundle\Listener\AdminDispatcherListener">
+            <tag name="kernel.event_subscriber" />
+            <tag name="monolog.logger" channel="request" />
+
+            <argument type="service" id="doctrine_phpcr"/>
+            <argument type="service" id="sonata.admin.pool" />
+            <argument>@/admin/tree/(.*)@</argument>
+            <argument type="service" id="logger" on-invalid="ignore" />
+        </service>
     </services>
 </container>
