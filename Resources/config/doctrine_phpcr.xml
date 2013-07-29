@@ -6,6 +6,18 @@
 
     <services>
 
+        <service id="sonata.admin.phpcr.dispatcher" class="Sonata\DoctrinePHPCRAdminBundle\Admin\AdminDispatcher">
+            <tag name="sonata.admin.phpcr" manager_type="doctrine_phpcr"/>
+
+            <argument/>
+            <argument>stdClass</argument>
+            <argument>SonataAdminBundle:CRUD</argument>
+
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+        </service>
+
         <service id="sonata.admin.manager.doctrine_phpcr" class="Sonata\DoctrinePHPCRAdminBundle\Model\ModelManager">
             <argument type="service" id="doctrine_phpcr.odm.default_document_manager" />
         </service>
