@@ -278,7 +278,7 @@ class ModelManager implements ModelManagerInterface
         }
 
         // the document is not managed
-        if (!$document || !$this->getDocumentManager()->contains($document)) {
+        if (!$document) {
             return null;
         }
 
