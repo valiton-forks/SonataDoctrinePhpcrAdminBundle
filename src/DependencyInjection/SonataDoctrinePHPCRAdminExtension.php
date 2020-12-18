@@ -57,8 +57,6 @@ class SonataDoctrinePHPCRAdminExtension extends AbstractSonataAdminExtension
         $loader->load('form.xml');
         $loader->load('route.xml');
         $loader->load('twig.xml');
-        $loader->load('block.xml');
-        $loader->load('tree.xml');
         $loader->load('autocomplete.xml');
 
         $configuration = new Configuration();
@@ -75,6 +73,9 @@ class SonataDoctrinePHPCRAdminExtension extends AbstractSonataAdminExtension
             ->replaceArgument(1, $config['templates']['types']['show']);
 
         if ($this->isConfigEnabled($container, $config['document_tree'])) {
+            $loader->load('doctrine_phpcr_tree_form_types.xml');
+            $loader->load('block.xml');
+            $loader->load('tree.xml');
             $this->loadDocumentTree($config['document_tree'], $container);
         }
     }
